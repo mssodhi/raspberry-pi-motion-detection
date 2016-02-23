@@ -4,6 +4,18 @@ import datetime
 import imutils
 import time
 import cv2
+import threading
+
+def f():
+    # do something here ...
+    global flag
+    flag = 1
+
+#    print("f is being called")
+    # call f() again in 60 seconds
+    threading.Timer(.5, f).start()
+
+f()
 
 # construct the argument parser and parse the arguments
 ap = argparse.ArgumentParser()
@@ -20,11 +32,19 @@ if args.get("video", None) is None:
 else:
     camera = cv2.VideoCapture(args["video"])
 
+
 # initialize the first frame in the video stream
 firstFrame = None
 
 # loop over the frames of the video
-while True:
+while 1:
+    
+    global flag
+    if flag == 1:
+#        print("flag should be 1")
+        firstFrame = None
+        flag = 0
+    
     # grab the current frame and initialize the occupied/unoccupied
     # text
     (grabbed, frame) = camera.read()
@@ -41,6 +61,7 @@ while True:
     gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
     # if the first frame is None, initialize it
+
     if firstFrame is None:
         firstFrame = gray
         continue
@@ -76,8 +97,8 @@ while True:
                                          
     # show the frame and record if the user presses a key
     cv2.imshow("Security Feed", frame)
-#    cv2.imshow("Thresh", thresh)
-#    cv2.imshow("Frame Delta", frameDelta)
+    cv2.imshow("Thresh", thresh)
+    cv2.imshow("Frame Delta", frameDelta)
     key = cv2.waitKey(1) & 0xFF
                                                          
     # if the `q` key is pressed, break from the lop

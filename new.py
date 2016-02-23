@@ -6,49 +6,30 @@ import time
 import cv2
 import threading
 
-def f():
-    # do something here ...
-    global flag
-    flag = 1
+def deleteFrame():
+    global firstFrame
+    firstFrame = None
+    # call deleteFrame() every 30 seconds -> .5 to delte previous frame.
+    threading.Timer(.5, deleteFrame).start()
 
-#    print("f is being called")
-    # call f() again in 60 seconds
-    threading.Timer(.5, f).start()
 
-f()
+deleteFrame()
 
-# construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-v", "--video", help="path to the video file")
-ap.add_argument("-a", "--min-area", type=int, default=500, help="minimum area size")
-args = vars(ap.parse_args())
 
-# if the video argument is None, then we are reading from webcam
-if args.get("video", None) is None:
-    camera = cv2.VideoCapture(0)
-    time.sleep(0.25)
-
-# otherwise, we are reading from a video file
-else:
-    camera = cv2.VideoCapture(args["video"])
+# set the camera
+camera = cv2.VideoCapture(0)
 
 
 # initialize the first frame in the video stream
+global firstFrame
 firstFrame = None
 
 # loop over the frames of the video
 while 1:
     
-    global flag
-    if flag == 1:
-#        print("flag should be 1")
-        firstFrame = None
-        flag = 0
-    
     # grab the current frame and initialize the occupied/unoccupied
-    # text
     (grabbed, frame) = camera.read()
-    text = "Unoccupied"
+    text = "False"
         
     # if the frame could not be grabbed, then we have reached the end
     # of the video
@@ -80,17 +61,17 @@ while 1:
     # loop over the contours
     for c in cnts:
         # if the contour is too small, ignore it
-        if cv2.contourArea(c) < args["min_area"]:
+        if cv2.contourArea(c) < 500:
             continue
                 
         # compute the bounding box for the contour, draw it on the frame,
         # and update the text
         (x, y, w, h) = cv2.boundingRect(c)
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        text = "Occupied"
+        text = "True"
                     
     # draw the text and timestamp on the frame
-    cv2.putText(frame, "Room Status: {}".format(text), (10, 20),
+    cv2.putText(frame, "Motion Detection: {}".format(text), (10, 20),
         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
     cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"),
         (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
@@ -99,6 +80,7 @@ while 1:
     cv2.imshow("Security Feed", frame)
 #    cv2.imshow("Thresh", thresh)
 #    cv2.imshow("Frame Delta", frameDelta)
+
     key = cv2.waitKey(1) & 0xFF
                                                          
     # if the `q` key is pressed, break from the lop

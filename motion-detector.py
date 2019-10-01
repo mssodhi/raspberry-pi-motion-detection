@@ -5,6 +5,7 @@ import imutils
 import time
 import cv2
 import threading
+import numpy as np
 
 def deleteFrame():
     global firstFrame
@@ -12,13 +13,10 @@ def deleteFrame():
     # call deleteFrame() every 30 seconds -> .5 to delte previous frame.
     threading.Timer(.5, deleteFrame).start()
 
-
 deleteFrame()
-
 
 # set the camera
 camera = cv2.VideoCapture(0)
-
 
 # initialize the first frame in the video stream
 global firstFrame
@@ -37,20 +35,25 @@ while 1:
         break
         
     # resize the frame, convert it to grayscale, and blur it
-    frame = imutils.resize(frame, width=500)
+    frame = imutils.resize(frame, width=400)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
     # if the first frame is None, initialize it
-
     if firstFrame is None:
         firstFrame = gray
         continue
         
     # compute the absolute difference between the current frame and
     # first frame
+    grayFrame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+    gray_3_frame = cv2.cvtColor(grayFrame, cv2.COLOR_GRAY2RGB)
     frameDelta = cv2.absdiff(firstFrame, gray)
+    frame_3_frame = cv2.cvtColor(frameDelta, cv2.COLOR_GRAY2RGB)
     thresh = cv2.threshold(frameDelta, 25, 255, cv2.THRESH_BINARY)[1]
+    # thresh_3_frame = cv2.cvtColor(thresh, cv2.COLOR_GRAY2RGB)
+    adaptive_thresh = cv2.adaptiveThreshold(gray,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,cv2.THRESH_BINARY,11,2)
+    adaptive_thresh_3 = cv2.cvtColor(adaptive_thresh, cv2.COLOR_GRAY2RGB)
 
     # dilate the thresholded image to fill in holes, then find contours
     # on thresholded image
@@ -77,9 +80,15 @@ while 1:
         (10, frame.shape[0] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
                                          
     # show the frame and record if the user presses a key
-    cv2.imshow("Security Feed", frame)
-#    cv2.imshow("Thresh", thresh)
-#    cv2.imshow("Frame Delta", frameDelta)
+    vstack1 = np.vstack((frame, frame_3_frame))
+    vstack2 = np.vstack((gray_3_frame, adaptive_thresh_3))
+    numpy_horizontal = np.hstack((vstack1, vstack2))
+    cv2.imshow("Monitor", numpy_horizontal)
+    # cv2.imshow("Security Feed", frame)
+    # cv2.imshow("Gray", grayFrame)
+    # cv2.imshow("Thresh", thresh)
+    # cv2.imshow("Thresh", adaptive_thresh)
+    # cv2.imshow("Frame Delta", frameDelta)
 
     key = cv2.waitKey(1) & 0xFF
                                                          
